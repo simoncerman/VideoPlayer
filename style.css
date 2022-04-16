@@ -1,0 +1,6 @@
+.video-player video{
+    position: relative;
+}
+.overlay{
+    background-color: yellow;
+}
