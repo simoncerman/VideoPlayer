@@ -1,3 +1,9 @@
+/**
+ * Generate canvas grid for percents
+ * @param {*} canvasDraw
+ * @param {*} width width of canvas
+ * @param {*} height height of canvas
+ */
 function drawPercentGrid(canvasDraw, width, height) {
   canvasDraw.lineWidth = 0.25;
   canvasDraw.beginPath();
@@ -52,8 +58,8 @@ function drawLines(canvasDraw, x0, y0, x1, y1, showPoints, lineColor) {
  * @param {string} lineColor color of line
  */
 function drawBezier(canvasDraw, x0, y0, x1, y1, showPoints, lineColor) {
+  //calculate point between starting and ending point
   let pointBetween = betweenPointCalculate(x0, y0, x1, y1);
-
   //draw full bezier
   //*first half
   canvasDraw.strokeStyle = lineColor;
@@ -114,7 +120,7 @@ function betweenPointCalculate(x0, y0, x1, y1) {
 function middleValueCalculate(x0, x1) {
   return x1 - (x1 - x0) / 2;
 }
-let values = [0, 0, 0];
+
 /**
  * Will draw square precisly on percentage dependent to values in array
  * @param {int} percents
@@ -153,7 +159,56 @@ function generateOnPercent(percents) {
     );
   }
 }
+/**
+ * calculate next position of dot
+ * depends on four points / two main / two controls
+ * and t value
+ * @param {*} points [p0, p1, p2, p3]
+ * @param {*} t
+ * @param {*} speed
+ */
+function moveOnBezierCurve(points, t, speed) {
+  let [p0, p1, p2, p3] = points;
+  //Calculate the coefficients based on where the ball currently is in the animation
+  let cx = 3 * (p1.x - p0.x);
+  let bx = 3 * (p2.x - p1.x) - cx;
+  let ax = p3.x - p0.x - cx - bx;
 
+  let cy = 3 * (p1.y - p0.y);
+  let by = 3 * (p2.y - p1.y) - cy;
+  let ay = p3.y - p0.y - cy - by;
+
+  let tSave = t;
+
+  //Increment t value by speed
+  tSave += speed;
+  //Calculate new X & Y positions of ball
+  let xt = ax * (t * t * t) + bx * (t * t) + cx * t + p0.x;
+  let yt = ay * (t * t * t) + by * (t * t) + cy * t + p0.y;
+
+  if (tSave > 1) {
+    tSave = 1;
+  }
+
+  //return new position
+  return { x: xt, y: yt, t: tSave };
+}
+
+/**
+ * Helper function for drawing data into output view
+ */
+function updateValues() {
+  let valueNames = ["data1", "data2", "data3"];
+  for (let i = 0; i < 3; i++) {
+    document.getElementById(valueNames[i]).innerHTML =
+      Math.round(values[i] * 100) + "%";
+  }
+}
+
+//helping values for saving percents
+let values = [0, 0, 0];
+
+//main data for function of program
 let canvasWidth = 1000;
 let canvasHeight = 700;
 let data = [
@@ -162,11 +217,15 @@ let data = [
   [12, 13, 15, 25, 46, 40, 50, 70, 71, 68],
 ];
 let colors = ["green", "red", "blue"];
+
+//loading canvas things
 let docCanvas = document.getElementById("canvas");
 let canvasDraw = docCanvas.getContext("2d");
 
+//draw grid
 drawPercentGrid(canvasDraw, canvasWidth, canvasHeight);
-
+/*
+//*Static curves and lines
 for (let dataLine = 0; dataLine < data.length; dataLine++) {
   let dataRow = data[dataLine];
   for (let i = 0; i < dataRow.length; i++) {
@@ -189,25 +248,76 @@ for (let dataLine = 0; dataLine < data.length; dataLine++) {
       colors[dataLine]
     );
   }
-}
-function updateValues() {
-  let valueNames = ["data1", "data2", "data3"];
-  for (let i = 0; i < 3; i++) {
-    document.getElementById(valueNames[i]).innerHTML = Math.round(values[i]*100) + "%";
+}*/
 
-  }
-}
-//Drawing lines animation setup
-let timeToRender = 60000;
+//*Animations
+//full render time in ms
+let timeToRender = 10000;
+//actual time
 let time = 0;
-let speed = 10;
+//speed 1 = 1ms
+let speed = 1;
+//t value for every curve
+let t = [0, 0, 0];
+
+/**
+ * This function is handling line animations
+ */
 function animateLine() {
   time += speed;
   let percents = time / timeToRender;
-  generateOnPercent(percents);
+  //generateOnPercent(percents);
   updateValues();
-  if (time >= 60000) {
-    clearInterval(interval);
+  if (time >= timeToRender) {
+    clearInterval(intervalLine);
+    clearInterval(intervalCurve);
   }
 }
-let interval = setInterval(animateLine, 1);
+
+function animateCurve() {
+  let percents = time / timeToRender;
+  for (let i = 0; i < data.length; i++) {
+    let dataRow = data[i];
+
+    //upper closest value of index to percents in array
+    let topCloseValue = Math.ceil(dataRow.length * percents);
+    //bottom closest value of index to percents in array
+    let bottomCloseValue = Math.floor(dataRow.length * percents);
+
+    //going from point
+    let p0 = {
+      x: (canvasWidth / data[i].length) * bottomCloseValue,
+      y: ((100 - dataRow[bottomCloseValue]) / 100) * canvasHeight,
+    };
+    //going to point
+    let p3 = {
+      x: (canvasWidth / data[i].length) * topCloseValue,
+      y: ((100 - dataRow[topCloseValue]) / 100) * canvasHeight,
+    };
+
+    //control point 1
+    let p1 = {
+      x: (canvasWidth / data[i].length) * bottomCloseValue+20,
+      y: ((100 - dataRow[bottomCloseValue]) / 100) * canvasHeight,
+    };
+    //control point 2
+    let p2 = {
+      x: (canvasWidth / data[i].length) * topCloseValue-20,
+      y: ((100 - dataRow[topCloseValue]) / 100) * canvasHeight,
+    };
+
+    let ret = moveOnBezierCurve(
+      [p0, p1, p2, p3],
+      t[i],
+      1 / (timeToRender / data[i].length)
+    );
+    t[i] = ret.t;
+    if (ret.t == 1) {
+      t[i] = 0;
+    }
+    console.log(ret.x, ret.y);
+    canvasDraw.strokeRect(ret.x, ret.y, 1, 1);
+  }
+}
+let intervalLine = setInterval(animateLine, 1);
+let intervalCurve = setInterval(animateCurve, 1);
