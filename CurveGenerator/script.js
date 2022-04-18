@@ -165,9 +165,8 @@ function generateOnPercent(percents) {
  * and t value
  * @param {*} points [p0, p1, p2, p3]
  * @param {*} t
- * @param {*} speed
  */
-function moveOnBezierCurve(points, t, speed) {
+function moveOnBezierCurve(points, t) {
   let [p0, p1, p2, p3] = points;
   //Calculate the coefficients based on where the ball currently is in the animation
   let cx = 3 * (p1.x - p0.x);
@@ -178,20 +177,12 @@ function moveOnBezierCurve(points, t, speed) {
   let by = 3 * (p2.y - p1.y) - cy;
   let ay = p3.y - p0.y - cy - by;
 
-  let tSave = t;
-
-  //Increment t value by speed
-  tSave += speed;
   //Calculate new X & Y positions of ball
   let xt = ax * (t * t * t) + bx * (t * t) + cx * t + p0.x;
   let yt = ay * (t * t * t) + by * (t * t) + cy * t + p0.y;
 
-  if (tSave > 1) {
-    tSave = 1;
-  }
-
   //return new position
-  return { x: xt, y: yt, t: tSave };
+  return { x: xt, y: yt };
 }
 
 /**
@@ -205,16 +196,13 @@ function updateValues() {
   }
 }
 
-//helping values for saving percents
-let values = [0, 0, 0];
-
 //main data for function of program
 let canvasWidth = 1000;
 let canvasHeight = 700;
 let data = [
-  [0, 20, 10, 70, 10, 20, 10, 20, 10, 20],
-  [15, 21, 60, 40, 50, 62, 50, 100, 70, 30],
-  [12, 13, 15, 25, 46, 40, 50, 70, 71, 68],
+  [0, 20, 10, 70, 10, 20, 10, 20, 10, 20, 10, 20, 10, 20],
+  [15, 21, 60, 40, 50, 30, 50, 100, 70, 30, 40, 60, 80, 90],
+  [12, 13, 15, 25, 46, 40, 50, 60, 71, 68, 10, 20, 40, 80],
 ];
 let colors = ["green", "red", "blue"];
 
@@ -252,30 +240,41 @@ for (let dataLine = 0; dataLine < data.length; dataLine++) {
 
 //*Animations
 //full render time in ms
-let timeToRender = 10000;
+let timeToRender = 60000;
 //actual time
-let time = 0;
-//speed 1 = 1ms
-let speed = 1;
-//t value for every curve
-let t = [0, 0, 0];
+let time = new Date().getTime();
+//saving starting time for later use
+let startTime = time;
+//t value
+let t;
+//segment time
+let segmentTime = timeToRender / data[0].length;
+// smooth index of curves
+let smoothIndex = 50; //50 ideal
 
 /**
- * This function is handling line animations
+ ** This function is handling line animations
  */
+/*
 function animateLine() {
   time += speed;
   let percents = time / timeToRender;
-  //generateOnPercent(percents);
+  generateOnPercent(percents);
   updateValues();
   if (time >= timeToRender) {
     clearInterval(intervalLine);
-    clearInterval(intervalCurve);
   }
-}
+}*/
 
+/**
+ * *This function is handling curve animation
+ */
 function animateCurve() {
-  let percents = time / timeToRender;
+  if (new Date().getTime() - startTime >= timeToRender)
+    clearInterval(intervalCurve);
+
+  let percents = (new Date().getTime() - startTime) / timeToRender;
+
   for (let i = 0; i < data.length; i++) {
     let dataRow = data[i];
 
@@ -284,40 +283,43 @@ function animateCurve() {
     //bottom closest value of index to percents in array
     let bottomCloseValue = Math.floor(dataRow.length * percents);
 
+    if (topCloseValue == bottomCloseValue) {
+      bottomCloseValue -= 1;
+    }
+
     //going from point
     let p0 = {
       x: (canvasWidth / data[i].length) * bottomCloseValue,
       y: ((100 - dataRow[bottomCloseValue]) / 100) * canvasHeight,
     };
     //going to point
-    let p3 = {
+    let p1 = {
       x: (canvasWidth / data[i].length) * topCloseValue,
       y: ((100 - dataRow[topCloseValue]) / 100) * canvasHeight,
     };
 
-    //control point 1
-    let p1 = {
-      x: (canvasWidth / data[i].length) * bottomCloseValue+20,
+    //control point 0
+    let c0 = {
+      x: (canvasWidth / data[i].length) * bottomCloseValue + smoothIndex,
       y: ((100 - dataRow[bottomCloseValue]) / 100) * canvasHeight,
     };
-    //control point 2
-    let p2 = {
-      x: (canvasWidth / data[i].length) * topCloseValue-20,
+    //control point 1
+    let c1 = {
+      x: (canvasWidth / data[i].length) * topCloseValue - smoothIndex,
       y: ((100 - dataRow[topCloseValue]) / 100) * canvasHeight,
     };
 
+    console.log();
     let ret = moveOnBezierCurve(
-      [p0, p1, p2, p3],
-      t[i],
-      1 / (timeToRender / data[i].length)
+      [p0, c0, c1, p1],
+      (new Date().getTime() - startTime) / (timeToRender / data[0].length) -
+        Math.floor(
+          (new Date().getTime() - startTime) / (timeToRender / data[0].length)
+        )
     );
-    t[i] = ret.t;
-    if (ret.t == 1) {
-      t[i] = 0;
-    }
-    console.log(ret.x, ret.y);
+    canvasDraw.strokeStyle = colors[i];
     canvasDraw.strokeRect(ret.x, ret.y, 1, 1);
   }
 }
-let intervalLine = setInterval(animateLine, 1);
+//let intervalLine = setInterval(animateLine, 1);
 let intervalCurve = setInterval(animateCurve, 1);
