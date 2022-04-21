@@ -244,6 +244,8 @@ class curveAnaliticGenerator {
    */
   animateCurve() {
     this.intervalCurve = setInterval(() => {
+      //preload data
+      // TODO: Rework -> not redefine
       let data = this.data;
       let canvasHeight = this.canvasHeight;
       let canvasWidth = this.canvasWidth;
