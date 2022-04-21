@@ -1,17 +1,12 @@
 class curveAnaliticGenerator {
-  constructor() {
+  constructor(canvas, data, timeToRender) {
     //loading canvas things
-    let docCanvas = document.getElementById("canvas");
-    this.canvasDraw = docCanvas.getContext("2d");
+    this.canvasDraw = canvas.getContext("2d");
 
     //main data for function of program
-    this.canvasWidth = 1000;
-    this.canvasHeight = 700;
-    this.data = [
-      [0, 20, 10, 70, 10, 20, 10, 20, 10, 20, 10, 20, 10, 20],
-      [15, 21, 60, 40, 50, 30, 50, 100, 70, 30, 40, 60, 80, 90],
-      [12, 13, 15, 25, 46, 40, 50, 60, 71, 68, 10, 20, 40, 80],
-    ];
+    this.canvasWidth = canvas.width;
+    this.canvasHeight = canvas.height;
+    this.data = data;
     this.colors = ["green", "red", "blue"];
 
     //draw full grid
@@ -19,21 +14,28 @@ class curveAnaliticGenerator {
 
     //*animation setup
     //full render time in ms
-    this.timeToRender = 60000;
+    this.timeToRender = timeToRender;
     // smooth index of curves
     this.smoothIndex = 50; //50 ideal
-
+    this.currentTime = 0;
     //actual time
     this.time = new Date().getTime();
     //saving starting time for later use
     this.startTime = this.time;
+    this.stopTime;
+    //actual time in video
+    this.timeInVideo = 0;
     //t value
     this.t;
     //segment time
     this.segmentTime = this.timeToRender / this.data[0].length;
 
-    //animations enabling
-    if (true) {
+    /**
+     * This is for starting animations right after loading curve
+     * So use it only for debug
+     */
+    //animations
+    if (false) {
       this.animateCurve();
     }
     if (false) {
@@ -239,75 +241,72 @@ class curveAnaliticGenerator {
       }
     }
   }
-  /**
-   * *This function is handling curve animation
-   */
-  animateCurve() {
-    this.intervalCurve = setInterval(() => {
-      //preload data
-      // TODO: Rework -> not redefine
-      let data = this.data;
-      let canvasHeight = this.canvasHeight;
-      let canvasWidth = this.canvasWidth;
-      let smoothIndex = this.smoothIndex;
-      let timeToRender = this.timeToRender;
-      let startTime = this.startTime;
-      let canvasDraw = this.canvasDraw;
-      let colors = this.colors;
+  animate(currentTime) {
+    //preload data
+    let data = this.data;
+    let canvasHeight = this.canvasHeight;
+    let canvasWidth = this.canvasWidth;
+    let smoothIndex = this.smoothIndex;
+    let timeToRender = this.timeToRender;
+    let canvasDraw = this.canvasDraw;
+    let colors = this.colors;
 
-      if (new Date().getTime() - startTime >= timeToRender)
+    //if you are on the end of video
+    /*
+      if (this.timeInVideo >= timeToRender) {
         clearInterval(this.intervalCurve);
+      }*/
 
-      let percents = (new Date().getTime() - startTime) / timeToRender;
+    let percents = currentTime / timeToRender;
 
-      for (let i = 0; i < data.length; i++) {
-        let dataRow = data[i];
+    for (let i = 0; i < data.length; i++) {
+      let dataRow = data[i];
 
-        //upper closest value of index to percents in array
-        let topCloseValue = Math.ceil(dataRow.length * percents);
-        //bottom closest value of index to percents in array
-        let bottomCloseValue = Math.floor(dataRow.length * percents);
+      //upper closest value of index to percents in array
+      let topCloseValue = Math.ceil(dataRow.length * percents);
+      //bottom closest value of index to percents in array
+      let bottomCloseValue = Math.floor(dataRow.length * percents);
 
-        if (topCloseValue == bottomCloseValue) {
-          bottomCloseValue -= 1;
-        }
-
-        //going from point
-        let p0 = {
-          x: (canvasWidth / data[i].length) * bottomCloseValue,
-          y: ((100 - dataRow[bottomCloseValue]) / 100) * canvasHeight,
-        };
-        //going to point
-        let p1 = {
-          x: (canvasWidth / data[i].length) * topCloseValue,
-          y: ((100 - dataRow[topCloseValue]) / 100) * canvasHeight,
-        };
-
-        //control point 0
-        let c0 = {
-          x: (canvasWidth / data[i].length) * bottomCloseValue + smoothIndex,
-          y: ((100 - dataRow[bottomCloseValue]) / 100) * canvasHeight,
-        };
-        //control point 1
-        let c1 = {
-          x: (canvasWidth / data[i].length) * topCloseValue - smoothIndex,
-          y: ((100 - dataRow[topCloseValue]) / 100) * canvasHeight,
-        };
-
-        let ret = handler.moveOnBezierCurve(
-          [p0, c0, c1, p1],
-          (new Date().getTime() - startTime) / (timeToRender / data[0].length) -
-            Math.floor(
-              (new Date().getTime() - startTime) /
-                (timeToRender / data[0].length)
-            )
-        );
-
-        canvasDraw.strokeStyle = colors[i];
-        canvasDraw.strokeRect(ret.x, ret.y, 1, 1);
+      if (topCloseValue == bottomCloseValue) {
+        bottomCloseValue -= 1;
       }
-    }, 1);
+
+      //going from point
+      let p0 = {
+        x: (canvasWidth / data[i].length) * bottomCloseValue,
+        y: ((100 - dataRow[bottomCloseValue]) / 100) * canvasHeight,
+      };
+      //going to point
+      let p1 = {
+        x: (canvasWidth / data[i].length) * topCloseValue,
+        y: ((100 - dataRow[topCloseValue]) / 100) * canvasHeight,
+      };
+
+      //control point 0
+      let c0 = {
+        x: (canvasWidth / data[i].length) * bottomCloseValue + smoothIndex,
+        y: ((100 - dataRow[bottomCloseValue]) / 100) * canvasHeight,
+      };
+      //control point 1
+      let c1 = {
+        x: (canvasWidth / data[i].length) * topCloseValue - smoothIndex,
+        y: ((100 - dataRow[topCloseValue]) / 100) * canvasHeight,
+      };
+
+      let percentageForStep = 100 / data[0].length / 100;
+      console.log(bottomCloseValue * percentageForStep);
+      let ret = this.moveOnBezierCurve(
+        [p0, c0, c1, p1],
+        (percents - bottomCloseValue * percentageForStep) /
+          (topCloseValue * percentageForStep -
+            bottomCloseValue * percentageForStep)
+      );
+
+      canvasDraw.strokeStyle = colors[i];
+      canvasDraw.strokeRect(ret.x, ret.y, 1, 1);
+    }
   }
+
   animateLine() {
     let data = this.data;
     let canvasHeight = this.canvasHeight;
@@ -350,4 +349,3 @@ class curveAnaliticGenerator {
     }, 1);
   }
 }
-let handler = new curveAnaliticGenerator();
