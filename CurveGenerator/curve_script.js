@@ -1,13 +1,17 @@
 class curveAnaliticGenerator {
-  constructor(canvas, data, timeToRender) {
+  constructor(canvas, data, timeToRender, colors) {
     //loading canvas things
     this.canvasDraw = canvas.getContext("2d");
 
     //main data for function of program
-    this.canvasWidth = canvas.width;
-    this.canvasHeight = canvas.height;
+    this.canvasWidth = canvas.width - canvas.width * 0.1;
+    this.canvasHeight = canvas.height - canvas.height * 0.1;
+
+    //padding for canvas
+    this.canvasPadding = canvas.width * 0.05;
+
     this.data = data;
-    this.colors = ["green", "red", "blue"];
+    this.colors = colors;
 
     //draw full grid
     this.drawPercentGrid(this.canvasDraw, this.canvasWidth, this.canvasHeight);
@@ -16,7 +20,7 @@ class curveAnaliticGenerator {
     //full render time in ms
     this.timeToRender = timeToRender;
     // smooth index of curves
-    this.smoothIndex = 50; //50 ideal
+    this.smoothIndex = 30; //50 ideal
     this.currentTime = 0;
     //actual time
     this.time = new Date().getTime();
@@ -53,13 +57,17 @@ class curveAnaliticGenerator {
    * @param {*} height height of canvas
    */
   drawPercentGrid(canvasDraw, width, height) {
-    canvasDraw.lineWidth = 0.25;
+    canvasDraw.lineWidth = 0.1;
     canvasDraw.beginPath();
     for (let i = 0; i < 11; i++) {
-      canvasDraw.moveTo(0, (height / 10) * i);
+      canvasDraw.moveTo(20, (height / 10) * i + this.canvasPadding);
       canvasDraw.font = "15px Arial";
-      canvasDraw.fillText(100 - i * 10 + "%", 0, (height / 10) * i);
-      canvasDraw.lineTo(width, (height / 10) * i);
+      canvasDraw.fillText(
+        100 - i * 10 + "%",
+        10,
+        (height / 10) * i + this.canvasPadding
+      );
+      canvasDraw.lineTo(width, (height / 10) * i + this.canvasPadding);
     }
     canvasDraw.stroke();
     canvasDraw.lineWidth = 1;
@@ -192,7 +200,7 @@ class curveAnaliticGenerator {
     let by = 3 * (p2.y - p1.y) - cy;
     let ay = p3.y - p0.y - cy - by;
 
-    //Calculate new X & Y positions of ball
+    //Calculate new X & Y positions of dot
     let xt = ax * (t * t * t) + bx * (t * t) + cx * t + p0.x;
     let yt = ay * (t * t * t) + by * (t * t) + cy * t + p0.y;
 
@@ -251,6 +259,8 @@ class curveAnaliticGenerator {
     let canvasDraw = this.canvasDraw;
     let colors = this.colors;
 
+    let returnPositions = [];
+
     //if you are on the end of video
     /*
       if (this.timeInVideo >= timeToRender) {
@@ -294,19 +304,43 @@ class curveAnaliticGenerator {
       };
 
       let percentageForStep = 100 / data[0].length / 100;
-      console.log(bottomCloseValue * percentageForStep);
       let ret = this.moveOnBezierCurve(
         [p0, c0, c1, p1],
         (percents - bottomCloseValue * percentageForStep) /
           (topCloseValue * percentageForStep -
             bottomCloseValue * percentageForStep)
       );
-
       canvasDraw.strokeStyle = colors[i];
-      canvasDraw.strokeRect(ret.x, ret.y, 1, 1);
+      //use circles
+      if (false) {
+        canvasDraw.beginPath();
+        canvasDraw.arc(
+          ret.x + this.canvasPadding,
+          ret.y + this.canvasPadding,
+          0.25,
+          0,
+          2 * Math.PI,
+          false
+        );
+        canvasDraw.fillStyle = "green";
+        canvasDraw.stroke();
+      }
+      //use rectangles
+      if (true) {
+        canvasDraw.strokeRect(
+          ret.x + this.canvasPadding,
+          ret.y + this.canvasPadding,
+          0.25,
+          0.25
+        );
+      }
+      returnPositions[i] = {
+        x: ret.x + this.canvasPadding,
+        y: ret.y + this.canvasPadding,
+      };
     }
+    return returnPositions;
   }
-
   animateLine() {
     let data = this.data;
     let canvasHeight = this.canvasHeight;

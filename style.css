@@ -7,3 +7,18 @@
 #canvas{
     position: absolute;
 }
+.canvas-holder{
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+}
+.dot {
+    border-radius: 50%;
+    display: inline-block;
+    position: absolute;
+    z-index: 9999;
+  }
