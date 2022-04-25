@@ -28,7 +28,6 @@ class AnaliticVideoPlayer {
         this.vidWidth,
         this.vidHeight
       );
-      //auto generating for debug 
       /*
       for (let o = 0; o < 60000; o++) {
         let actualPosition = this.curveHandler.animate(o);
@@ -130,10 +129,14 @@ class AnaliticVideoPlayer {
 }
 
 let colors = ["green", "red", "blue", "yellow"];
-let data = [
+/*let data = [
   [0, 20, 10, 70, 10, 20, 10, 20, 10, 20, 10, 20, 10, 20],
   [15, 21, 60, 40, 50, 30, 50, 100, 70, 30, 40, 60, 80, 90],
   [12, 13, 15, 25, 46, 40, 50, 60, 71, 68, 10, 20, 40, 80],
   [5, 6, 7, 8, 9, 10, 11, 15, 17, 19, 20, 21, 17, 13],
+];*/
+let data = [
+  [10, 10, 10],
+  [10, 50, 10],
 ];
 let playerHandler = new AnaliticVideoPlayer(data, colors);

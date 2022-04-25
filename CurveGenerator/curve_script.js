@@ -3,12 +3,12 @@ class curveAnaliticGenerator {
     //loading canvas things
     this.canvasDraw = canvas.getContext("2d");
 
-    //main data for function of program
-    this.canvasWidth = canvas.width - canvas.width * 0.1;
-    this.canvasHeight = canvas.height - canvas.height * 0.1;
-
     //padding for canvas
     this.canvasPadding = canvas.width * 0.05;
+
+    //main data for function of program
+    this.canvasWidth = canvas.width - this.canvasPadding * 2;
+    this.canvasHeight = canvas.height;
 
     this.data = data;
     this.colors = colors;
@@ -16,39 +16,15 @@ class curveAnaliticGenerator {
     //draw full grid
     this.drawPercentGrid(this.canvasDraw, this.canvasWidth, this.canvasHeight);
 
-    //*animation setup
     //full render time in ms
     this.timeToRender = timeToRender;
     // smooth index of curves
-    this.smoothIndex = 30; //50 ideal
-    this.currentTime = 0;
+    this.smoothIndex = 100; //50 ideal
     //actual time
     this.time = new Date().getTime();
     //saving starting time for later use
     this.startTime = this.time;
     this.stopTime;
-    //actual time in video
-    this.timeInVideo = 0;
-    //t value
-    this.t;
-    //segment time
-    this.segmentTime = this.timeToRender / this.data[0].length;
-
-    /**
-     * This is for starting animations right after loading curve
-     * So use it only for debug
-     */
-    //animations
-    if (false) {
-      this.animateCurve();
-    }
-    if (false) {
-      this.animateLine();
-    }
-    //static
-    if (false) {
-      this.generateStaticCurveLine();
-    }
   }
   /**
    * Generate canvas grid for percents
@@ -72,97 +48,6 @@ class curveAnaliticGenerator {
     canvasDraw.stroke();
     canvasDraw.lineWidth = 1;
   }
-  /**
-   * Draw static bezier between two points
-   * @param {int} canvasDraw Canvas handler
-   * @param {int} x0 Starting point X
-   * @param {int} y0 Starting point Y
-   * @param {int} x1 Ending point X
-   * @param {int} y1 Ending point Y *
-   * @param {boolean} showPoints TRUE show points | FALSE dont show
-   * @param {string} lineColor color of line
-   */
-  drawLines(canvasDraw, x0, y0, x1, y1, showPoints, lineColor) {
-    //draw default path
-    canvasDraw.strokeStyle = lineColor;
-    canvasDraw.beginPath();
-    canvasDraw.moveTo(x0, y0);
-    canvasDraw.lineTo(x1, y1);
-    canvasDraw.stroke();
-
-    if (showPoints == true) {
-      //main points
-      canvasDraw.strokeStyle = "#ffffff";
-      canvasDraw.strokeRect(x0, y0, 4, 4);
-      canvasDraw.strokeStyle = "#000000";
-
-      //point between main points
-      let pointBetween = betweenPointCalculate(x0, y0, x1, y1);
-      canvasDraw.strokeStyle = "#ffffff";
-      canvasDraw.strokeRect(pointBetween[0], pointBetween[1], 4, 4);
-      canvasDraw.strokeStyle = "#000000";
-    }
-  }
-  /**
-   * Will render bezier curve
-   * TODO: Need to rework
-   * @param {int} canvasDraw Canvas handler
-   * @param {int} x0 Starting point X
-   * @param {int} y0 Starting point Y
-   * @param {int} x1 Ending point X
-   * @param {int} y1 Ending point Y *
-   * @param {boolean} showPoints TRUE show points | FALSE dont show
-   * @param {string} lineColor color of line
-   */
-  drawBezier(canvasDraw, x0, y0, x1, y1, showPoints, lineColor) {
-    //calculate point between starting and ending point
-    let pointBetween = this.betweenPointCalculate(x0, y0, x1, y1);
-    //draw full bezier
-    //*first half
-    canvasDraw.strokeStyle = lineColor;
-    canvasDraw.beginPath();
-    canvasDraw.moveTo(x0, y0);
-    canvasDraw.quadraticCurveTo(
-      this.middleValueCalculate(x0, pointBetween[0]),
-      y0,
-      pointBetween[0],
-      pointBetween[1]
-    );
-    canvasDraw.stroke();
-    canvasDraw.strokeStyle = "#000000";
-
-    if (showPoints == true) {
-      //control point for first bezier
-      canvasDraw.strokeStyle = "#ffffff";
-      canvasDraw.strokeRect(
-        this.middleValueCalculate(x0, pointBetween[0]),
-        y0,
-        5,
-        5
-      );
-    }
-
-    //*secound half
-    canvasDraw.strokeStyle = lineColor;
-    canvasDraw.beginPath();
-    canvasDraw.moveTo(pointBetween[0], pointBetween[1]);
-    canvasDraw.quadraticCurveTo(
-      this.middleValueCalculate(pointBetween[0], x1),
-      y1,
-      x1,
-      y1
-    );
-    canvasDraw.stroke();
-    canvasDraw.strokeStyle = "#000000";
-
-    if (showPoints == true) {
-      //control point for secound bezier
-      canvasDraw.strokeStyle = "#ffffff";
-      canvasDraw.strokeRect(pointBetween[0], y1, 5, 5);
-      canvasDraw.strokeStyle = "#000000";
-    }
-  }
-
   /**
    * Function will calculate point between points
    * @param {*} x0 Starting point X
@@ -261,21 +146,15 @@ class curveAnaliticGenerator {
 
     let returnPositions = [];
 
-    //if you are on the end of video
-    /*
-      if (this.timeInVideo >= timeToRender) {
-        clearInterval(this.intervalCurve);
-      }*/
-
     let percents = currentTime / timeToRender;
-
     for (let i = 0; i < data.length; i++) {
       let dataRow = data[i];
-
       //upper closest value of index to percents in array
-      let topCloseValue = Math.ceil(dataRow.length * percents);
+      let topCloseValue = Math.ceil((dataRow.length - 1) * percents);
       //bottom closest value of index to percents in array
-      let bottomCloseValue = Math.floor(dataRow.length * percents);
+      let bottomCloseValue = Math.floor((dataRow.length - 1) * percents);
+
+      console.log(topCloseValue, bottomCloseValue);
 
       if (topCloseValue == bottomCloseValue) {
         bottomCloseValue -= 1;
@@ -283,36 +162,38 @@ class curveAnaliticGenerator {
 
       //going from point
       let p0 = {
-        x: (canvasWidth / data[i].length) * bottomCloseValue,
+        x: (canvasWidth / (data[i].length - 1)) * bottomCloseValue,
         y: ((100 - dataRow[bottomCloseValue]) / 100) * canvasHeight,
       };
       //going to point
       let p1 = {
-        x: (canvasWidth / data[i].length) * topCloseValue,
+        x: (canvasWidth / (data[i].length - 1)) * topCloseValue,
         y: ((100 - dataRow[topCloseValue]) / 100) * canvasHeight,
       };
 
       //control point 0
       let c0 = {
-        x: (canvasWidth / data[i].length) * bottomCloseValue + smoothIndex,
+        x:
+          (canvasWidth / (data[i].length - 1)) * bottomCloseValue + smoothIndex,
         y: ((100 - dataRow[bottomCloseValue]) / 100) * canvasHeight,
       };
       //control point 1
       let c1 = {
-        x: (canvasWidth / data[i].length) * topCloseValue - smoothIndex,
+        x: (canvasWidth / (data[i].length - 1)) * topCloseValue - smoothIndex,
         y: ((100 - dataRow[topCloseValue]) / 100) * canvasHeight,
       };
 
-      let percentageForStep = 100 / data[0].length / 100;
+      let percentageForStep = 100 / (data[0].length - 1) / 100;
       let ret = this.moveOnBezierCurve(
         [p0, c0, c1, p1],
         (percents - bottomCloseValue * percentageForStep) /
           (topCloseValue * percentageForStep -
             bottomCloseValue * percentageForStep)
       );
+      this.drawHelpPoints(canvasDraw, p0, p1, c0, c1);
       canvasDraw.strokeStyle = colors[i];
       //use circles
-      if (false) {
+      if (true) {
         canvasDraw.beginPath();
         canvasDraw.arc(
           ret.x + this.canvasPadding,
@@ -326,7 +207,7 @@ class curveAnaliticGenerator {
         canvasDraw.stroke();
       }
       //use rectangles
-      if (true) {
+      if (false) {
         canvasDraw.strokeRect(
           ret.x + this.canvasPadding,
           ret.y + this.canvasPadding,
@@ -341,45 +222,40 @@ class curveAnaliticGenerator {
     }
     return returnPositions;
   }
-  animateLine() {
-    let data = this.data;
-    let canvasHeight = this.canvasHeight;
-    let canvasWidth = this.canvasWidth;
-    let canvasDraw = this.canvasDraw;
-    let colors = this.colors;
-
-    this.intervalLine = setInterval(() => {
-      if (new Date().getTime() - this.startTime >= this.timeToRender)
-        clearInterval(this.intervalLine);
-
-      let percents =
-        (new Date().getTime() - this.startTime) / this.timeToRender;
-
-      for (let dataLine = 0; dataLine < data.length; dataLine++) {
-        canvasDraw.strokeStyle = colors[dataLine];
-        let dataRow = data[dataLine];
-        //upper closest value of index to percents in array
-        let topCloseValue = Math.ceil(dataRow.length * percents);
-        //bottom closest value of index to percents in array
-        let bottomCloseValue = Math.floor(dataRow.length * percents);
-
-        let fullPercents =
-          topCloseValue / dataRow.length - bottomCloseValue / dataRow.length;
-
-        let differenceValues =
-          (dataRow[bottomCloseValue] - dataRow[topCloseValue]) *
-          ((percents - bottomCloseValue / dataRow.length) / fullPercents);
-
-        //draw point
-        canvasDraw.strokeRect(
-          percents * canvasWidth,
-          canvasHeight -
-            (dataRow[bottomCloseValue] / 100) * canvasHeight +
-            (differenceValues / 100) * canvasHeight,
-          1,
-          1
-        );
-      }
-    }, 1);
+  /**
+   * For debug
+   * Below is just set of normal points {p0,p1} and control points {c0,c1}
+   * @param {*} p0
+   * @param {*} p1
+   * @param {*} c0
+   * @param {*} c1
+   */
+  drawHelpPoints(canvasDraw, p0, p1, c0, c1) {
+    canvasDraw.strokeStyle = "black";
+    canvasDraw.strokeRect(
+      p0.x + this.canvasPadding,
+      p0.y + this.canvasPadding - 5,
+      1,
+      10
+    );
+    canvasDraw.strokeRect(
+      p1.x + this.canvasPadding,
+      p1.y + this.canvasPadding - 5,
+      1,
+      10
+    );
+    canvasDraw.strokeStyle = "yellow";
+    canvasDraw.strokeRect(
+      c0.x + this.canvasPadding,
+      c0.y + this.canvasPadding - 5,
+      5,
+      5
+    );
+    canvasDraw.strokeRect(
+      c1.x + this.canvasPadding,
+      c1.y + this.canvasPadding - 5,
+      5,
+      5
+    );
   }
 }
